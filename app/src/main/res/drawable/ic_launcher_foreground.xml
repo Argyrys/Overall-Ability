@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer 4-axis radar diamond -->
+    <path
+        android:pathData="M54,24 L84,54 L54,84 L24,54 Z"
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="4"
+        android:fillColor="#00000000" />
+    <!-- Inner ring -->
+    <path
+        android:pathData="M54,39 L69,54 L54,69 L39,54 Z"
+        android:strokeColor="#6C63FF"
+        android:strokeWidth="3"
+        android:fillColor="#00000000" />
+    <!-- Score polygon -->
+    <path
+        android:pathData="M54,30 L76,56 L52,74 L34,50 Z"
+        android:fillColor="#3300E5FF"
+        android:strokeColor="#FFD54F"
+        android:strokeWidth="3" />
+    <!-- Axis cross -->
+    <path
+        android:pathData="M54,24 L54,84 M24,54 L84,54"
+        android:strokeColor="#33FFFFFF"
+        android:strokeWidth="2"
+        android:fillColor="#00000000" />
+    <!-- Center node -->
+    <path
+        android:pathData="m54,50 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0"
+        android:fillColor="#00E5FF" />
+</vector>
