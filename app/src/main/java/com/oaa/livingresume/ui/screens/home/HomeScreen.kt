@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -45,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.oaa.livingresume.audio.Sfx
+import com.oaa.livingresume.data.model.Grade
 import com.oaa.livingresume.data.model.Pillar
 import com.oaa.livingresume.data.model.Student
 import com.oaa.livingresume.data.model.TargetRole
@@ -214,7 +216,9 @@ private fun OaaProfileCard(me: Student, rank: Int, total: Int) {
     val accent = gradeColor(grade)
 
     val heroShape = androidx.compose.foundation.shape.CutCornerShape(22.dp)
-    Box(
+    // Measure the actual space available: phones, foldables and tablets all
+    // get their own padding, radar size and column count without hard-coded screens.
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
             .clip(heroShape)
@@ -223,102 +227,193 @@ private fun OaaProfileCard(me: Student, rank: Int, total: Int) {
                 width = 1.5.dp,
                 brush = Brush.linearGradient(listOf(CyanGlow, IndigoGlow, GoldGlow, CyanGlow)),
                 shape = heroShape,
-            )
-            .padding(18.dp),
+            ),
     ) {
-        Column {
-            Row(verticalAlignment = Alignment.Top) {
-                Column(Modifier.weight(1f)) {
-                    Eyebrow("Student OAA Card")
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        me.name,
-                        style = MaterialTheme.typography.titleLarge.exo(FontWeight.W700),
-                        color = TextPrimary,
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        me.branch,
-                        style = MaterialTheme.typography.bodySmall.exo(FontWeight.W400),
-                        color = TextSecondary,
-                    )
-                    Text(
-                        "Roll ${me.rollNo} · Batch of ${me.gradYear}",
-                        style = MaterialTheme.typography.bodySmall.exo(FontWeight.W400),
-                        color = TextSecondary,
-                    )
-                }
-                Spacer(Modifier.width(10.dp))
-                Column(horizontalAlignment = Alignment.End) {
-                    GradeBadge(grade, large = true)
-                    Spacer(Modifier.height(6.dp))
-                    RankChip(rank = rank, total = total)
-                }
-            }
+        val compact = maxWidth < 340.dp
+        val wide = maxWidth >= 620.dp
+        val cardPadding = when {
+            compact -> 12.dp
+            wide -> 24.dp
+            else -> 18.dp
+        }
+        val gap = if (compact) 10.dp else 14.dp
+        val radarHeight = if (wide) {
+            (maxWidth * 0.42f).coerceIn(240.dp, 320.dp)
+        } else {
+            (maxWidth * 0.72f).coerceIn(170.dp, 250.dp)
+        }
 
-            Spacer(Modifier.height(14.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                RoleChip(me.targetRole)
-                InfoPill("CGPA ${me.cgpa}", GoldGlow)
-            }
-
-            Spacer(Modifier.height(16.dp))
-            RadarChartCanvas(
-                scores = me.pillarScores,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(250.dp),
-            )
-
-            Spacer(Modifier.height(16.dp))
-            PillarLegend(me.pillarScores)
-
-            Spacer(Modifier.height(14.dp))
-            HorizontalDivider(color = OutlineFaint)
-            Spacer(Modifier.height(12.dp))
-
-            // Overall score + exact points to the next letter tier
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Eyebrow("Overall OAA · 総合力")
-                    Spacer(Modifier.height(3.dp))
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        AnimatedScoreText(
-                            value = overall.toDouble(),
-                            format = { v -> v.toInt().toString() },
-                            style = MaterialTheme.typography.displaySmall.copy(
-                                letterSpacing = (-2).sp,
-                            ).numeric(FontWeight.W700),
-                            color = accent,
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = "/100",
-                            style = MaterialTheme.typography.titleMedium.numeric(FontWeight.W600),
-                            color = TextSecondary,
-                            modifier = Modifier.padding(bottom = 8.dp),
-                        )
+        Column(Modifier.padding(cardPadding)) {
+            if (wide) {
+                // Tablet / landscape: identity + legend on the left, radar on the right.
+                Row(verticalAlignment = Alignment.Top) {
+                    Column(Modifier.weight(1f)) {
+                        IdentityHeader(me, grade, rank, total, compact = false)
+                        Spacer(Modifier.height(gap))
+                        RoleRow(me)
+                        Spacer(Modifier.height(gap + 4.dp))
+                        PillarLegend(me.pillarScores)
                     }
-                    Spacer(Modifier.height(6.dp))
-                    ScoreProgressBar(overall, accent, height = 6.dp)
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = if (nextGrade != null) {
-                            "${OaaEngine.pointsToNextTier(overall)} points to reach ${nextGrade.label}"
-                        } else {
-                            "Highest letter tier achieved - keep it above 90"
-                        },
-                        style = MaterialTheme.typography.bodySmall.exo(FontWeight.W400),
-                        color = TextSecondary,
+                    Spacer(Modifier.width(24.dp))
+                    RadarChartCanvas(
+                        scores = me.pillarScores,
+                        modifier = Modifier
+                            .weight(1.15f)
+                            .height(radarHeight),
                     )
                 }
-                Spacer(Modifier.width(12.dp))
-                Column(horizontalAlignment = Alignment.End) {
-                    GradeBadge(grade)
-                    Spacer(Modifier.height(6.dp))
-                    PillarTag(me.pillarScores.weakest().first)
-                }
+            } else {
+                IdentityHeader(me, grade, rank, total, compact = compact)
+                Spacer(Modifier.height(gap))
+                RoleRow(me)
+                Spacer(Modifier.height(gap + 2.dp))
+                RadarChartCanvas(
+                    scores = me.pillarScores,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(radarHeight),
+                )
+                Spacer(Modifier.height(gap + 2.dp))
+                PillarLegend(me.pillarScores)
             }
+
+            Spacer(Modifier.height(gap))
+            HorizontalDivider(color = OutlineFaint)
+            Spacer(Modifier.height(gap))
+            ScoreFooter(overall, grade, nextGrade, me.pillarScores.weakest().first, accent, compact)
+        }
+    }
+}
+
+/** Name / branch / grade / rank block; stacks vertically on narrow screens. */
+@Composable
+private fun IdentityHeader(
+    me: Student,
+    grade: Grade,
+    rank: Int,
+    total: Int,
+    compact: Boolean,
+) {
+    val identity: @Composable () -> Unit = {
+        Eyebrow("Student OAA Card")
+        Spacer(Modifier.height(if (compact) 4.dp else 6.dp))
+        Text(
+            me.name,
+            style = if (compact) {
+                MaterialTheme.typography.titleMedium.exo(FontWeight.W700)
+            } else {
+                MaterialTheme.typography.titleLarge.exo(FontWeight.W700)
+            },
+            color = TextPrimary,
+            maxLines = 2,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            me.branch,
+            style = MaterialTheme.typography.bodySmall.exo(FontWeight.W400),
+            color = TextSecondary,
+            maxLines = 2,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        )
+        Text(
+            "Roll ${me.rollNo} · Batch of ${me.gradYear}",
+            style = MaterialTheme.typography.bodySmall.exo(FontWeight.W400),
+            color = TextSecondary,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        )
+    }
+    val badges: @Composable () -> Unit = {
+        GradeBadge(grade, large = !compact)
+        Spacer(Modifier.height(6.dp))
+        RankChip(rank = rank, total = total)
+    }
+
+    if (compact) {
+        Column {
+            identity()
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                badges()
+            }
+        }
+    } else {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f)) { identity() }
+            Spacer(Modifier.width(10.dp))
+            Column(horizontalAlignment = Alignment.End) { badges() }
+        }
+    }
+}
+
+/** Role + CGPA pills wrap onto the next line when the card is narrow. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RoleRow(me: Student) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        RoleChip(me.targetRole)
+        InfoPill("CGPA ${me.cgpa}", GoldGlow)
+    }
+}
+
+/** Overall score, progress bar and exact points to the next letter tier. */
+@Composable
+private fun ScoreFooter(
+    overall: Double,
+    grade: Grade,
+    nextGrade: Grade?,
+    weakest: Pillar,
+    accent: androidx.compose.ui.graphics.Color,
+    compact: Boolean,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Eyebrow("Overall OAA · 総合力")
+            Spacer(Modifier.height(3.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                AnimatedScoreText(
+                    value = overall,
+                    format = { v -> v.toInt().toString() },
+                    style = if (compact) {
+                        MaterialTheme.typography.headlineSmall.copy(letterSpacing = (-2).sp).numeric(FontWeight.W700)
+                    } else {
+                        MaterialTheme.typography.displaySmall.copy(letterSpacing = (-2).sp).numeric(FontWeight.W700)
+                    },
+                    color = accent,
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "/100",
+                    style = MaterialTheme.typography.titleMedium.numeric(FontWeight.W600),
+                    color = TextSecondary,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            ScoreProgressBar(overall, accent, height = 6.dp)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = if (nextGrade != null) {
+                    "${OaaEngine.pointsToNextTier(overall)} points to reach ${nextGrade.label}"
+                } else {
+                    "Highest letter tier achieved - keep it above 90"
+                },
+                style = MaterialTheme.typography.bodySmall.exo(FontWeight.W400),
+                color = TextSecondary,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.width(if (compact) 8.dp else 12.dp))
+        Column(horizontalAlignment = Alignment.End) {
+            GradeBadge(grade)
+            Spacer(Modifier.height(6.dp))
+            PillarTag(weakest)
         }
     }
 }

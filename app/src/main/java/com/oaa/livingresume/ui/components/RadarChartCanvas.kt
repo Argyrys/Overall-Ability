@@ -3,7 +3,7 @@ package com.oaa.livingresume.ui.components
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -62,11 +62,15 @@ fun RadarChartCanvas(
 
     val pillars = Pillar.entries
 
-    Box(modifier = modifier) {
+    BoxWithConstraints(modifier = modifier) {
+        // Reserve just enough room for the labels at this size instead of a
+        // fixed 62/34dp inset, so the polygon stays large on small phones.
+        val labelInsetX = (maxWidth * 0.17f).coerceIn(42.dp, 70.dp)
+        val labelInsetY = (maxHeight * 0.13f).coerceIn(26.dp, 36.dp)
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 62.dp, vertical = 34.dp),
+                .padding(horizontal = labelInsetX, vertical = labelInsetY),
         ) {
             val center = Offset(size.width / 2f, size.height / 2f)
             val maxRadius = min(size.width, size.height) / 2f - 2.dp.toPx()
